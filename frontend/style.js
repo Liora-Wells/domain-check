@@ -173,6 +173,23 @@ export const HTML_CSS = `
     line-height: 0.95;
     background-color: var(--status-color); /* 状态颜色 */
 }
+.card-permanent-badge {
+    padding: 4px 10px;
+    margin-left: 8px;
+    border-radius: 50px;
+    color: white;
+    font-size: 0.8rem;
+    line-height: 1;
+    background-color: #27ae60; /* 与永久域名状态颜色一致 */
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.card-permanent-badge i {
+    font-size: 0.9em;
+}
 .card-info p {
     margin: 5px 0;
     font-size: 0.8rem;
