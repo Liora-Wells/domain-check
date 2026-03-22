@@ -41,9 +41,13 @@ async function handlePostDomain(request, env) {
         const isPrimary = isPrimaryDomain(domainName);
         const isEdit = allDomains.some(d => d.domain === originalDomainName);
         
+        // 永久域名标志
+        const isPermanent = newDomainData.isPermanent || false;
+        
         // --- WHOIS 自动填充逻辑 ---
         // 条件：一级域名 (isPrimary) 且用户未手动输入关键信息 (expirationDate 缺失)
-        if (isPrimary && !newDomainData.expirationDate) {
+        // 注意：永久域名不需要 WHOIS 查询
+        if (isPrimary && !isPermanent && !newDomainData.expirationDate) {
             console.log(`一级域名 ${domainName} 缺少到期日期，尝试 WHOIS 自动填充...`);
             const apiData = await fetchDomainFromAPI(env, domainName);
             
@@ -63,10 +67,18 @@ async function handlePostDomain(request, env) {
             }
         }
 
-        // 必填项检查逻辑 (针对所有未被 WHOIS 成功填充的域名)
-        if (!newDomainData.expirationDate) {
+        // 必填项检查逻辑 (永久域名不需要到期时间)
+        if (!isPermanent) {
             if (!newDomainData.registrationDate || !newDomainData.system || !newDomainData.expirationDate || !newDomainData.systemURL) {
                 return new Response(JSON.stringify({ error: '信息不完整：注册/到期时间、注册商名称和URL为必填项。' }), { 
+                    status: 422,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+        } else {
+            // 永久域名验证：至少需要注册商信息
+            if (!newDomainData.system || !newDomainData.systemURL) {
+                return new Response(JSON.stringify({ error: '永久域名必须填写注册商名称和URL。' }), { 
                     status: 422,
                     headers: { 'Content-Type': 'application/json' }
                 });

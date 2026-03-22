@@ -324,6 +324,30 @@ export const HTML_CSS = `
     border-radius: 8px;
 }
 
+.permanent-checkbox {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #f0f7ff;
+    border-radius: 8px;
+    border: 1px solid #d0e1f5;
+}
+
+.permanent-checkbox label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: normal;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.permanent-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #186db3;
+}
+
 .footer {
     background-color: none;
     color: #333333;

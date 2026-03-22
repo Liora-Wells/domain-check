@@ -87,6 +87,13 @@ export function HTML_TEMPLATE (siteName, siteIcon, bgimgURL, githubURL, blogURL,
                 <label for="expirationDate"><i class="fa fa-calendar"></i> 到期时间 (YYYY-MM-DD)</label>
                 <input type="date" id="expirationDate" required>
 
+                <div class="permanent-checkbox">
+                    <label>
+                        <input type="checkbox" id="isPermanent"> 
+                        <span>永久域名（无到期时间）</span>
+                    </label>
+                </div>
+
                 <label for="system"><i class="fa fa-registered"></i> 注册商名称</label>
                 <input type="text" id="system" placeholder="例如: cloudflare">
 

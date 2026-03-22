@@ -164,9 +164,10 @@ function importData() {
 }
 
 // 获取域名状态信息
-function getDomainStatus(expirationDateStr) {
-    if (!expirationDateStr) {
-        return { statusText: '信息缺失', statusColor: '#95a5a6', daysRemaining: 'N/A' };
+function getDomainStatus(expirationDateStr, isPermanent) {
+    // 优先检查 isPermanent 标志位，使用严格等于避免类型转换问题
+    if (isPermanent === true) {
+        return { statusText: '永久', statusColor: '#27ae60', daysRemaining: 'N/A' };
     }
     
     const now = new Date();
@@ -202,19 +203,23 @@ function renderSummary(domainsList) {
     let normalCount = 0;
     let expiringCount = 0;
     let expiredCount = 0;
+    let permanentCount = 0;
 
     domainsList.forEach(domain => {
-        const { statusText } = getDomainStatus(domain.expirationDate);
+        const isPermanent = domain.isPermanent || false;
+        const { statusText } = getDomainStatus(domain.expirationDate, isPermanent);
         if (statusText === '正常') {
             normalCount++;
         } else if (statusText === '将到期') {
             expiringCount++;
         } else if (statusText === '已到期') {
             expiredCount++;
+        } else if (statusText === '永久') {
+            permanentCount++;
         }
     }); 
 
-    const usableCount = normalCount + expiringCount; // 状态“正常”和“将到期”的域名都视为“可用”
+    const usableCount = normalCount + expiringCount; // 状态"正常"和"将到期"的域名都视为"可用"
 
     // 生成 HTML 并根据 currentStatusFilter 动态添加 active 类
     summaryEl.innerHTML = \`
@@ -233,6 +238,10 @@ function renderSummary(domainsList) {
         <div class="summary-card \${currentStatusFilter === '已到期' ? 'active' : ''}" style="--color: #e74c3c;" data-filter="已到期">
             <h3><i class="fa fa-times"></i> 已到期</h3>
             <p>\${expiredCount}</p>
+        </div>
+        <div class="summary-card \${currentStatusFilter === '永久' ? 'active' : ''}" style="--color: #27ae60;" data-filter="永久">
+            <h3><i class="fa fa-infinity"></i> 永久</h3>
+            <p>\${permanentCount}</p>
         </div>
     \`;
 
@@ -254,7 +263,7 @@ function handleSummaryClick(e) {
 
     clickedCard.classList.add('active'); // 为当前点击的卡片添加 active 状态
     currentStatusFilter = filterValue; // 更新状态筛选变量
-    currentGroup = '全部'; // 将分组筛选重置为“全部”
+    currentGroup = '全部'; // 将分组筛选重置为"全部"
 
     // 移除分组标签的 active 状态
     document.querySelectorAll('#groupTabs .tab-btn').forEach(tab => {
@@ -271,7 +280,7 @@ function handleSummaryClick(e) {
 // 渲染分组标签
 function renderGroupTabs() {
     const tabsEl = document.getElementById('groupTabs');
-    const existingGroups = ['全部', '一级域名', '二级域名', '未分组'];
+    const existingGroups = ['全部', '一级域名', '二级域名', '未分组', '永久域名'];
     const customGroups = new Set();
     
     allDomains.forEach(d => {
@@ -330,7 +339,8 @@ function handleTabClick(e) {
 
 // 生成单个域名卡片的 HTML
 function createDomainCard(info) {
-    const { statusText, statusColor, daysRemaining } = getDomainStatus(info.expirationDate);
+    const isPermanent = info.isPermanent || false;
+    const { statusText, statusColor, daysRemaining } = getDomainStatus(info.expirationDate, isPermanent);
     const registrationDate = new Date(info.registrationDate);
     const expirationDate = new Date(info.expirationDate);
     const today = new Date();
@@ -341,8 +351,14 @@ function createDomainCard(info) {
     let remainingText = daysRemaining;
     let elapsedText = 'N/A';
     let progressPercentText = 'N/A';
+    let permanentBadge = '';
 
-    if (info.registrationDate && info.expirationDate) {
+    if (isPermanent) {
+        permanentBadge = '<span class="card-permanent-badge"><i class="fa fa-infinity"></i> 永久</span>';
+        remainingText = '永久';
+        elapsedText = 'N/A';
+        progressPercentText = 'N/A';
+    } else if (info.registrationDate && info.expirationDate) {
          totalDays = (expirationDate - registrationDate) / (1000 * 60 * 60 * 24);
          daysElapsed = (today - registrationDate) / (1000 * 60 * 60 * 24);
          progressPercentage = Math.min(100, Math.max(0, (daysElapsed / totalDays) * 100));
@@ -364,21 +380,26 @@ function createDomainCard(info) {
         <div class="domain-card" style="--status-color: \${statusColor}; --border-color: \${borderColor};">
             <div class="card-header">
                 <span class="card-domain" data-domain="\${info.domain}" title="点击即可复制">\${info.domain}</span>
-                <span class="card-status">\${statusText}</span>
+                <div class="card-header-right">
+                    <span class="card-status">\${statusText}</span>
+                    \${permanentBadge}
+                </div>
             </div>
             <div class="card-info">
                 <p><strong><i class="fa fa-registered"></i> 注册商: </strong> <a href="$\{info.systemURL}" target="_blank" title="点击直达">\${info.system || 'N/A'}</a></p>
                 <p><strong><i class="fa fa-user"></i> 注册账号: </strong> \${info.registerAccount || 'N/A'}</p>
                 <p><strong><i class="fa fa-calendar"></i> 注册时间: </strong> \${info.registrationDate || 'N/A'}</p>
-                <p><strong><i class="fa fa-calendar"></i> 到期时间: </strong> \${info.expirationDate || 'N/A'}</p>
+                <p><strong><i class="fa fa-calendar"></i> 到期时间: </strong> \${isPermanent ? '<span style="color: #27ae60; font-weight: bold;">永久</span>' : (info.expirationDate || 'N/A')}</p>
                 <p><strong><i class="fa fa-folder"></i> 所属分组: </strong> \${info.groups || '无'}</p>
             </div>
             <div class="card-footer">
+                \${!isPermanent ? \`
                 <div class="progress-bar-container">
                     <div class="progress-bar" style="width: \${progressPercentage}%;"></div>
                     <span class="progress-percent-display">\${progressPercentText}</span>
                 </div>
                 <div class="progress-text">已使用 \${elapsedText} | 剩余 \${remainingText}</div>
+                \` : '<div class="progress-text" style="text-align: center; color: #27ae60; font-weight: bold;"><i class="fa fa-infinity"></i> 永久域名</div>'}
                 <div style="text-align: right; margin-top: 10px;">
                     <i class="fas fa-edit edit-icon" data-domain="\${info.domain}" title="编辑"></i>
                     <i class="fas fa-trash-alt delete-icon" data-domain="\${info.domain}" title="删除"></i>
@@ -477,6 +498,7 @@ function applyFiltersAndSearch() {
         // 分组过滤 (Common)
         const domainGroups = (domain.groups || '').split(',').map(g => g.trim()).filter(g => g);
         const domainLevel = getDomainLevel(domain.domain);
+        const isPermanent = domain.isPermanent || false;
         let groupMatch = true;
 
         if (currentGroup === '一级域名') {
@@ -485,6 +507,8 @@ function applyFiltersAndSearch() {
             groupMatch = domainLevel === '二级域名';
         } else if (currentGroup === '未分组') {
             groupMatch = domainGroups.length === 0;
+        } else if (currentGroup === '永久域名') {
+            groupMatch = isPermanent;
         } else if (currentGroup !== '全部') {
             groupMatch = domainGroups.includes(currentGroup);
         }
@@ -497,7 +521,8 @@ function applyFiltersAndSearch() {
                 domain.domain.toLowerCase().includes(searchTerm) || // 域名
                 (domain.system || '').toLowerCase().includes(searchTerm) || // 注册商
                 (domain.registerAccount || '').toLowerCase().includes(searchTerm) || // 注册账号
-                (domain.groups || '').toLowerCase().includes(searchTerm) // 分组
+                (domain.groups || '').toLowerCase().includes(searchTerm) || // 分组
+                (isPermanent ? '永久'.includes(searchTerm) : false) // 永久域名搜索
             );
         }
         return true;
@@ -509,8 +534,17 @@ function applyFiltersAndSearch() {
 
     // 计算 currentFilteredDomains
     currentFilteredDomains = domainsForSummary.filter(domain => {
-        const { statusText } = getDomainStatus(domain.expirationDate);
+        const isPermanent = domain.isPermanent || false;
+        const { statusText } = getDomainStatus(domain.expirationDate, isPermanent);
+        
         if (currentStatusFilter === '' || currentStatusFilter === '全部') { return true; }
+        
+        // 永久域名状态处理
+        if (isPermanent) {
+            if (currentStatusFilter === '永久') { return true; }
+            return false;
+        }
+        
         if (currentStatusFilter === '正常') {
             return (statusText === '正常' || statusText === '将到期');
         } else {
@@ -541,12 +575,16 @@ async function fetchDomains() {
             // 根据域名状态排序 (已到期 < 将到期 < 正常)
             const statusA = getDomainStatus(a.expirationDate).statusText;
             const statusB = getDomainStatus(b.expirationDate).statusText;
+            
+            // 永久域名排序优先级最低
             const getStatusPriority = (status) => {
                 if (status === '已到期') return 1;
                 if (status === '将到期') return 2;
                 if (status === '正常') return 3;
-                return 4;
+                if (status === '永久') return 4;
+                return 5;
             };
+            
             const priorityA = getStatusPriority(statusA);
             const priorityB = getStatusPriority(statusB);
             if (priorityA !== priorityB) { return priorityA - priorityB; }
@@ -599,6 +637,7 @@ async function submitDomainForm(e) {
         groups: document.getElementById('groups').value,
         renewalPeriod: document.getElementById('renewalPeriod').value ? parseInt(document.getElementById('renewalPeriod').value) : null,
         renewalUnit: document.getElementById('renewalUnit').value || null,
+        isPermanent: document.getElementById('isPermanent').checked || false,
     };
     
     // 如果是一级域名且字段为空，则删除这些键，让后端进行 WHOIS 查询和填充
@@ -682,7 +721,9 @@ function openDomainForm(domainInfo = null) {
     const renewalPeriodEl = document.getElementById('renewalPeriod');
     const renewalUnitEl = document.getElementById('renewalUnit');
     const expirationDateEl = document.getElementById('expirationDate');
+    const isPermanentCheckbox = document.getElementById('isPermanent');
     form.reset();
+    isPermanentCheckbox.checked = false;
 
     if (warningEl) { warningEl.style.display = 'none'; } // 打开模态框时隐藏域名级别提示
     
@@ -699,6 +740,11 @@ function openDomainForm(domainInfo = null) {
         renewalPeriodEl.value = domainInfo.renewalPeriod || ''; // 续费周期
         renewalUnitEl.value = domainInfo.renewalUnit || 'year'; // 周期单位
         document.getElementById('domain').disabled = false; // 编辑时允许修改域名
+        
+        // 设置永久域名复选框
+        if (domainInfo.isPermanent) {
+            isPermanentCheckbox.checked = true;
+        }
     } else {
         title.textContent = '添加域名';
         document.getElementById('editOriginalDomain').value = '';
@@ -723,6 +769,22 @@ function updateFormRequiredStatus(domainValue) {
     const warningEl = document.getElementById('domainFillWarning'); // 获取动态提示或警告元素
     const originalDomain = document.getElementById('editOriginalDomain').value; // 获取编辑模式下的原域名
     const domainExists = allDomains.some(d => d.domain === domainValueTrimmed && d.domain !== originalDomain); // 当前输入域名是否存在
+    const isPermanent = document.getElementById('isPermanent').checked; // 是否为永久域名
+
+    // 如果是永久域名，隐藏到期时间字段
+    if (isPermanent) {
+        const expirationDateEl = document.getElementById('expirationDate');
+        if (expirationDateEl) {
+            expirationDateEl.style.display = 'none';
+        }
+        return;
+    }
+
+    // 恢复到期时间字段显示
+    const expirationDateEl = document.getElementById('expirationDate');
+    if (expirationDateEl) {
+        expirationDateEl.style.display = 'block';
+    }
 
     // 处理域名为空的情况
     if (!domainValueTrimmed) {
@@ -773,6 +835,46 @@ function updateFormRequiredStatus(domainValue) {
     }
 }
 
+// 处理永久域名复选框变化
+function handlePermanentDomainChange(isPermanent) {
+    const expirationDateEl = document.getElementById('expirationDate');
+    const renewalPeriodEl = document.getElementById('renewalPeriod');
+    const renewalUnitEl = document.getElementById('renewalUnit');
+    const warningEl = document.getElementById('domainFillWarning');
+    
+    if (isPermanent) {
+        // 隐藏到期时间字段
+        if (expirationDateEl) {
+            expirationDateEl.style.display = 'none';
+        }
+        // 清空续费周期相关字段
+        if (renewalPeriodEl) renewalPeriodEl.value = '';
+        if (renewalUnitEl) renewalUnitEl.value = 'year';
+        // 隐藏续费周期控件
+        const renewalGroup = document.querySelector('.renewal-group');
+        if (renewalGroup) {
+            renewalGroup.style.display = 'none';
+        }
+        // 清空警告提示
+        if (warningEl) {
+            warningEl.textContent = '永久域名无需填写到期时间';
+            warningEl.style.color = '#2ecc71';
+            warningEl.style.display = 'block';
+        }
+    } else {
+        // 显示所有字段
+        if (expirationDateEl) {
+            expirationDateEl.style.display = 'block';
+        }
+        const renewalGroup = document.querySelector('.renewal-group');
+        if (renewalGroup) {
+            renewalGroup.style.display = 'flex';
+        }
+        // 更新警告提示
+        updateFormRequiredStatus(document.getElementById('domain').value);
+    }
+}
+
 // --- 事件监听和初始化 ---
 window.addEventListener('load', async () => {
     await fetchConfig(); // 获取配置
@@ -820,6 +922,14 @@ window.addEventListener('load', async () => {
     domainEl.addEventListener('input', (e) => {
         updateFormRequiredStatus(e.target.value);
     });
+    
+    // 绑定永久域名复选框事件（只绑定一次）
+    const isPermanentCheckbox = document.getElementById('isPermanent');
+    if (isPermanentCheckbox) {
+        isPermanentCheckbox.addEventListener('change', function() {
+            handlePermanentDomainChange(this.checked);
+        });
+    }
 });
 
 `;
