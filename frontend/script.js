@@ -570,6 +570,9 @@ async function submitDomainForm(e) {
     
     if (!isPermanent) {
         newDomainData.expirationDate = document.getElementById('expirationDate').value;
+    } else {
+        // 永久域名时，确保不包含到期时间字段
+        delete newDomainData.expirationDate;
     }
     
     if (isPrimary) {
@@ -671,6 +674,12 @@ function openDomainForm(domainInfo = null) {
         
         if (domainInfo.isPermanent) {
             isPermanentCheckbox.checked = true;
+            // 永久域名时，隐藏到期时间字段
+            expirationDateEl.style.display = 'none';
+            const renewalGroup = document.querySelector('.renewal-group');
+            if (renewalGroup) {
+                renewalGroup.style.display = 'none';
+            }
         }
     } else {
         title.textContent = '添加域名';
@@ -699,6 +708,16 @@ function updateFormRequiredStatus(domainValue) {
         const expirationDateEl = document.getElementById('expirationDate');
         if (expirationDateEl) {
             expirationDateEl.style.display = 'none';
+        }
+        // 永久域名时，所有字段都不是必填的
+        requiredFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.required = false; }
+        });
+        if (warningEl) {
+            warningEl.textContent = '永久域名无需填写到期时间';
+            warningEl.style.color = '#2ecc71';
+            warningEl.style.display = 'block';
         }
         return;
     }
