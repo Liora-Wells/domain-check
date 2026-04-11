@@ -172,6 +172,7 @@ export const HTML_CSS = `
     margin-bottom: 15px;
     border-bottom: 2px solid var(--border-color); /* 状态颜色 */
     padding-bottom: 10px;
+    min-height: 40px;
 }
 .card-domain {
     font-size: 1.1rem;
@@ -190,6 +191,13 @@ export const HTML_CSS = `
     font-size: 0.8rem;
     line-height: 0.95;
     background-color: var(--status-color); /* 状态颜色 */
+    white-space: nowrap;
+}
+.card-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
 }
 .card-permanent-badge {
     padding: 4px 8px;
@@ -204,11 +212,13 @@ export const HTML_CSS = `
     font-weight: 500;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: background-color 0.3s, transform 0.2s;
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
 }
 
 .card-permanent-badge:hover {
     opacity: 0.9;
     transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 .card-permanent-badge i {
     font-size: 0.9em;
@@ -238,11 +248,13 @@ export const HTML_CSS = `
     overflow: hidden;
     height: 15px;
     position: relative;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 .progress-bar {
     height: 100%;
     background-color: var(--status-color); /* 状态颜色 */
     transition: width 0.5s ease;
+    background: linear-gradient(90deg, var(--status-color) 0%, rgba(255, 255, 255, 0.2) 100%);
 }
 .progress-percent-display {
     position: absolute;
@@ -253,6 +265,8 @@ export const HTML_CSS = `
     color: #333;
     line-height: 1;
     z-index: 2;
+    font-weight: bold;
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
 }
 .progress-text {
     font-size: 0.8rem;

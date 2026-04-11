@@ -309,7 +309,7 @@ function createDomainCard(info) {
         permanentBadge = '<span class="card-permanent-badge" style="background-color: ' + statusColor + '"><i class="fa fa-infinity"></i> 永久</span>';
         remainingText = '永久';
         elapsedText = 'N/A';
-        progressPercentText = 'N/A';
+        progressPercentText = '永久';
     } else if (info.registrationDate && info.expirationDate) {
          totalDays = (expirationDate - registrationDate) / (1000 * 60 * 60 * 24);
          daysElapsed = (today - registrationDate) / (1000 * 60 * 60 * 24);
@@ -332,7 +332,9 @@ function createDomainCard(info) {
     html += '<div class="card-header">';
     html += '<span class="card-domain" data-domain="' + info.domain + '" title="点击即可复制">' + info.domain + '</span>';
     html += '<div class="card-header-right">';
-    html += '<span class="card-status">' + statusText + '</span>';
+    if (!isPermanent) {
+        html += '<span class="card-status">' + statusText + '</span>';
+    }
     html += permanentBadge;
     html += '</div></div>';
     html += '<div class="card-info">';
