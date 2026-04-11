@@ -792,6 +792,8 @@ function handlePermanentDomainChange(isPermanent) {
             warningEl.style.color = '#2ecc71';
             warningEl.style.display = 'block';
         }
+        // 调用 updateFormRequiredStatus 来更新表单验证状态
+        updateFormRequiredStatus(document.getElementById('domain').value);
     } else {
         if (expirationDateEl) {
             expirationDateEl.style.display = 'block';
