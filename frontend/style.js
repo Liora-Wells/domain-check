@@ -145,6 +145,24 @@ export const HTML_CSS = `
     transition: transform 0.3s, box-shadow 0.3s;
     display: flex;
     flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.domain-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.2);
+    z-index: 0;
+}
+
+.domain-card > * {
+    position: relative;
+    z-index: 1;
 }
 .domain-card:hover { transform: translateY(-3px); box-shadow: 0 0 8px rgba(0,0,0,0.25); }
 .card-header {
@@ -174,18 +192,23 @@ export const HTML_CSS = `
     background-color: var(--status-color); /* 状态颜色 */
 }
 .card-permanent-badge {
-    padding: 4px 10px;
+    padding: 4px 8px;
     margin-left: 8px;
     border-radius: 50px;
     color: white;
     font-size: 0.8rem;
-    line-height: 1;
-    background-color: #27ae60; /* 与永久域名状态颜色一致 */
+    line-height: 0.95;
     display: inline-flex;
     align-items: center;
     gap: 4px;
     font-weight: 500;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.card-permanent-badge:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
 }
 .card-permanent-badge i {
     font-size: 0.9em;
@@ -416,6 +439,7 @@ export const HTML_CSS = `
     .domain-grid { grid-template-columns: repeat(auto-fill, minmax(95%, 1fr));  gap: 12px; }
     .card-header { align-items: flex-start; gap: 5px; }
     .card-status { align-self: flex-start; }
+    .card-permanent-badge { align-self: flex-start; margin-top: 2px; }
 
     /* 模态框 */
     .modal-content { margin: 5% auto; width: 90%; padding: 15px; }
