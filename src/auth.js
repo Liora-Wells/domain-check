@@ -1,6 +1,6 @@
 // src/_middleware.js
 
-import { getConfig } from './utils';
+import { getConfig } from './utils.js';
 
 // 认证逻辑
 export async function authenticate(request, env) {

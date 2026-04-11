@@ -1,7 +1,7 @@
 // src/cron.js
 
-import { getConfig, sendtgMessage } from './utils';
-import { getDomainsFromKV } from './api/domains';
+import { getConfig, sendtgMessage } from './utils.js';
+import { getDomainsFromKV } from './api/domains.js';
 
 // 封装获取域名列表的函数
 export async function getDomainsList(env) {

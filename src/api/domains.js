@@ -1,7 +1,7 @@
 // src/api/domains.js
 
-import { isPrimaryDomain } from '../utils';
-import { fetchDomainFromAPI } from './whois';
+import { isPrimaryDomain } from '../utils.js';
+import { fetchDomainFromAPI } from './whois.js';
 
 const KV_KEY = 'DOMAIN_LIST';
 

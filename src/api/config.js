@@ -1,6 +1,6 @@
 // src/api/config.js
 
-import { getConfig } from '../utils';
+import { getConfig } from '../utils.js';
 
 export async function onRequest(context) {
     const { env } = context;

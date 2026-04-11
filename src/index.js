@@ -1,13 +1,13 @@
 // src/index.js
 
 // 导入所有动态逻辑模块
-import { getConfig } from './utils';
-import { HTML_TEMPLATE } from '../frontend/index';
-import { onRequest as configApi } from './api/config';
-import { onRequest as domainsApi } from './api/domains';
-import { onRequest as whoisApi } from './api/whois';
-import { checkDomainsScheduled } from './cron';
-import { authenticate, handleLogin } from './auth';
+import { getConfig } from './utils.js';
+import { HTML_TEMPLATE } from '../frontend/index.js';
+import { onRequest as configApi } from './api/config.js';
+import { onRequest as domainsApi } from './api/domains.js';
+import { onRequest as whoisApi } from './api/whois.js';
+import { checkDomainsScheduled } from './cron.js';
+import { authenticate, handleLogin } from './auth.js';
 
 export default {
     async fetch(request, env, ctx) {

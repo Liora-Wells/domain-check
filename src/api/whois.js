@@ -1,6 +1,6 @@
 // src/api/whois.js
 
-import { isPrimaryDomain } from '../utils';
+import { isPrimaryDomain } from '../utils.js';
 
 // WHOIS查询模块
 async function fetchWhoisData(domain) {
