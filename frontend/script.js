@@ -631,26 +631,35 @@ async function submitDomainForm(e) {
     }
     
     const isPrimary = isPrimaryDomain(domainValue);
+    const isPermanent = document.getElementById('isPermanent').checked || false;
     let newDomainData = {
         // 使用一个唯一标识，确保编辑时提交的还是同一个域名
         originalDomain: document.getElementById('editOriginalDomain').value || domainValue,
         domain: domainValue,
         registrationDate: document.getElementById('registrationDate').value,
-        expirationDate: document.getElementById('expirationDate').value,
         system: document.getElementById('system').value,
         systemURL: document.getElementById('systemURL').value,
         registerAccount: document.getElementById('registerAccount').value,
         groups: document.getElementById('groups').value,
         renewalPeriod: document.getElementById('renewalPeriod').value ? parseInt(document.getElementById('renewalPeriod').value) : null,
         renewalUnit: document.getElementById('renewalUnit').value || null,
-        isPermanent: document.getElementById('isPermanent').checked || false,
+        isPermanent: isPermanent,
     };
+    
+    // 永久域名不需要到期时间
+    if (!isPermanent) {
+        newDomainData.expirationDate = document.getElementById('expirationDate').value;
+    }
     
     // 如果是一级域名且字段为空，则删除这些键，让后端进行 WHOIS 查询和填充
     if (isPrimary) {
-        ['registrationDate', 'expirationDate', 'system', 'systemURL'].forEach(key => {
+        ['registrationDate', 'system', 'systemURL'].forEach(key => {
             if (!newDomainData[key]) { newDomainData[key] = ""; }
         });
+        // 永久域名不需要到期时间
+        if (!isPermanent && !newDomainData.expirationDate) {
+            newDomainData.expirationDate = "";
+        }
     }
 
     try {
