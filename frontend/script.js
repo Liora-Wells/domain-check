@@ -376,43 +376,43 @@ function createDomainCard(info) {
 
     // 根据状态调整边框颜色
     let borderColor = statusColor;
-    return \`
-        <div class="domain-card" style="--status-color: \${statusColor}; --border-color: \${borderColor};">
+    return `
+        <div class="domain-card" style="--status-color: ${statusColor}; --border-color: ${borderColor};">
             <div class="card-header">
-                <span class="card-domain" data-domain="\${info.domain}" title="点击即可复制">\${info.domain}</span>
+                <span class="card-domain" data-domain="${info.domain}" title="点击即可复制">${info.domain}</span>
                 <div class="card-header-right">
-                    <span class="card-status">\${statusText}</span>
-                    \${permanentBadge}
+                    <span class="card-status">${statusText}</span>
+                    ${permanentBadge}
                 </div>
             </div>
             <div class="card-info">
-                <p><strong><i class="fa fa-registered"></i> 注册商: </strong> <a href="$\{info.systemURL}" target="_blank" title="点击直达">\${info.system || 'N/A'}</a></p>
-                <p><strong><i class="fa fa-user"></i> 注册账号: </strong> \${info.registerAccount || 'N/A'}</p>
-                <p><strong><i class="fa fa-calendar"></i> 注册时间: </strong> \${info.registrationDate || 'N/A'}</p>
-                <p><strong><i class="fa fa-calendar"></i> 到期时间: </strong> \${isPermanent ? `<span style="color: \${statusColor}; font-weight: bold;">永久</span>` : (info.expirationDate || 'N/A')}</p>
-                <p><strong><i class="fa fa-folder"></i> 所属分组: </strong> \${info.groups || '无'}</p>
+                <p><strong><i class="fa fa-registered"></i> 注册商: </strong> <a href="${info.systemURL}" target="_blank" title="点击直达">${info.system || 'N/A'}</a></p>
+                <p><strong><i class="fa fa-user"></i> 注册账号: </strong> ${info.registerAccount || 'N/A'}</p>
+                <p><strong><i class="fa fa-calendar"></i> 注册时间: </strong> ${info.registrationDate || 'N/A'}</p>
+                <p><strong><i class="fa fa-calendar"></i> 到期时间: </strong> ${isPermanent ? `<span style="color: ${statusColor}; font-weight: bold;">永久</span>` : (info.expirationDate || 'N/A')}</p>
+                <p><strong><i class="fa fa-folder"></i> 所属分组: </strong> ${info.groups || '无'}</p>
             </div>
             <div class="card-footer">
-                \${!isPermanent ? \`
+                ${!isPermanent ? `
                 <div class="progress-bar-container">
-                    <div class="progress-bar" style="width: \${progressPercentage}%;"></div>
-                    <span class="progress-percent-display">\${progressPercentText}</span>
+                    <div class="progress-bar" style="width: ${progressPercentage}%;"></div>
+                    <span class="progress-percent-display">${progressPercentText}</span>
                 </div>
-                <div class="progress-text">已使用 \${elapsedText} | 剩余 \${remainingText}</div>
-                \` : \`
+                <div class="progress-text">已使用 ${elapsedText} | 剩余 ${remainingText}</div>
+                ` : `
                 <div class="progress-bar-container">
-                    <div class="progress-bar" style="width: 100%; background-color: \${statusColor};"></div>
+                    <div class="progress-bar" style="width: 100%; background-color: ${statusColor};"></div>
                     <span class="progress-percent-display" style="color: white;">永久</span>
                 </div>
-                <div class="progress-text" style="color: \${statusColor}; font-weight: bold;"><i class="fa fa-infinity"></i> 永久域名</div>
-                \`}
+                <div class="progress-text" style="color: ${statusColor}; font-weight: bold;"><i class="fa fa-infinity"></i> 永久域名</div>
+                `}
                 <div style="text-align: right; margin-top: 10px;">
-                    <i class="fas fa-edit edit-icon" data-domain="\${info.domain}" title="编辑"></i>
-                    <i class="fas fa-trash-alt delete-icon" data-domain="\${info.domain}" title="删除"></i>
+                    <i class="fas fa-edit edit-icon" data-domain="${info.domain}" title="编辑"></i>
+                    <i class="fas fa-trash-alt delete-icon" data-domain="${info.domain}" title="删除"></i>
                 </div>
             </div>
         </div>
-    \`;
+    `;
 }
 
 // 渲染当前页的域名卡片
