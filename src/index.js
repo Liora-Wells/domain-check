@@ -17,6 +17,13 @@ export default {
         
         if (pathname === '/login') { return handleLogin(request, env); }
 
+        if (pathname === '/logout') {
+            const headers = new Headers();
+            headers.set('Location', '/');
+            headers.set('Set-Cookie', 'auth=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Path=/; Secure; SameSite=Lax');
+            return new Response(null, { status: 302, headers });
+        }
+
         if (pathname === '/api/config') {
             const context = { request, env, ctx, next: () => {} }; 
             return configApi(context);

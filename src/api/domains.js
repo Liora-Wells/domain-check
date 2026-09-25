@@ -166,6 +166,56 @@ async function handleDeleteDomain(request, env) {
     }
 }
 
+// 续费域名处理: PATCH /api/domains — 适配 DOMAIN_LIST，永久域名禁止续费
+async function handlePatchDomain(request, env) {
+    let data;
+    try {
+        data = await request.json();
+        if (!data || !data.domain || !data.duration || !data.unit) {
+            return new Response(JSON.stringify({ error: '缺少必填字段: domain, duration, unit' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        }
+    } catch (e) {
+        return new Response(JSON.stringify({ error: '无效的 JSON 格式' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    const domainName = data.domain;
+    const duration = parseInt(data.duration);
+    const unit = data.unit;
+    if (duration < 1) {
+        return new Response(JSON.stringify({ error: '续费时长必须大于0' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (unit !== 'year' && unit !== 'month') {
+        return new Response(JSON.stringify({ error: '续费单位必须是 year 或 month' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    try {
+        const allDomains = await getDomainsFromKV(env);
+        const idx = allDomains.findIndex(d => d.domain === domainName);
+        if (idx === -1) {
+            return new Response(JSON.stringify({ error: `域名 ${domainName} 未找到` }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+        }
+        const existing = allDomains[idx];
+        if (existing.isPermanent) {
+            return new Response(JSON.stringify({ error: '永久域名无需续费' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        }
+        const currentExpDate = new Date(existing.expirationDate);
+        if (isNaN(currentExpDate.getTime())) {
+            return new Response(JSON.stringify({ error: '域名到期日期格式无效' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        }
+        const newExpDate = new Date(currentExpDate);
+        if (unit === 'year') newExpDate.setFullYear(currentExpDate.getFullYear() + duration);
+        else newExpDate.setMonth(currentExpDate.getMonth() + duration);
+        const newExpirationDate = `${newExpDate.getFullYear()}-${String(newExpDate.getMonth() + 1).padStart(2, '0')}-${String(newExpDate.getDate()).padStart(2, '0')}`;
+        existing.expirationDate = newExpirationDate;
+        existing.renewalPeriod = duration;
+        existing.renewalUnit = unit;
+        allDomains[idx] = existing;
+        await setDomainsToKV(env, allDomains);
+        return new Response(JSON.stringify({ success: true, domain: domainName, newExpirationDate, renewedDuration: duration, renewedUnit: unit }), { headers: { 'Content-Type': 'application/json' } });
+    } catch (error) {
+        console.error('Error in handlePatchDomain:', error);
+        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+}
+
 export async function onRequest(context) {
     const { request, env } = context;
 
@@ -199,6 +249,10 @@ export async function onRequest(context) {
         // 删除域名 DELETE 路由处理
         if (request.method === 'DELETE') {
             return handleDeleteDomain(request, env);
+        }
+
+        if (request.method === 'PATCH') {
+            return handlePatchDomain(request, env);
         }
 
         return new Response('Method Not Allowed', { status: 405 });

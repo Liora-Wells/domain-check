@@ -17,8 +17,8 @@ export async function authenticate(request, env) {
     return Response.redirect(new URL('/login', request.url), 302);
 }
 
-// 登录处理逻辑
-export async function handleLogin(request, env) {
+// 登录处理逻辑 — redirectTo 兼容上游 /admin，默认 / 保持现有行为
+export async function handleLogin(request, env, redirectTo = '/') {
     const config = getConfig(env);
     if (request.method === 'GET') {
         const html = generateLoginPage(false, config.siteName, config.siteIcon, config.bgimgURL, config.githubURL, config.blogURL, config.blogName);
@@ -33,7 +33,7 @@ export async function handleLogin(request, env) {
                 const expires = new Date();
                 expires.setDate(expires.getDate() + 7);
                 const headers = new Headers();
-                headers.set('Location', '/');
+                headers.set('Location', redirectTo);
                 headers.set('Set-Cookie', `auth=${password}; Expires=${expires.toUTCString()}; HttpOnly; Path=/; Secure; SameSite=Lax`);
                 return new Response(null, { status: 302, headers: headers });
             } else {

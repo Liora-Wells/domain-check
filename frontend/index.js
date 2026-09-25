@@ -1,5 +1,5 @@
-import { HTML_CSS } from './style';
-import { HTML_JS } from './script';
+import { HTML_CSS } from './style.js';
+import { HTML_JS } from './script.js';
 
 // 导出背景样式函数
 export function generateBgStyle(bgimgURL) {
@@ -55,9 +55,12 @@ export function HTML_TEMPLATE (siteName, siteIcon, bgimgURL, githubURL, blogURL,
         <h1 id="siteTitle"><i class="fas fa-clock"></i> ${siteName}</h1>
         <div class="action-buttons">
             <button id="addDomainBtn" class="action-btn add-btn"><i class="fas fa-plus"></i> 添加域名</button>
+            <button id="selectAllBtn" class="action-btn select-btn"><i class="fas fa-check-square"></i> 全选</button>
+            <button id="batchDeleteBtn" class="action-btn del-btn"><i class="fas fa-trash"></i> 删除</button>
             <button id="exportDataBtn" class="action-btn export-btn"><i class="fas fa-download"></i> 导出数据</button>
             <button id="importDataBtn" class="action-btn import-btn"><i class="fas fa-upload"></i> 导入数据</button>
             <input type="file" id="importFileInput" accept=".json" style="display: none;">
+            <button id="logoutBtn" class="action-btn logout-btn"><i class="fas fa-sign-out-alt"></i> 退出</button>
         </div>
     </div>
 
@@ -95,19 +98,60 @@ export function HTML_TEMPLATE (siteName, siteIcon, bgimgURL, githubURL, blogURL,
                 </div>
 
                 <label for="system"><i class="fa fa-registered"></i> 注册商名称</label>
-                <input type="text" id="system" placeholder="例如: cloudflare">
+                <div class="autocomplete-field">
+                    <input type="text" id="system" placeholder="例如: cloudflare" autocomplete="off">
+                    <i class="fas fa-chevron-down autocomplete-arrow"></i>
+                    <div class="autocomplete-dropdown" id="systemDropdown"></div>
+                </div>
 
                 <label for="systemURL"><i class="fa fa-link"></i> 注册商地址</label>
-                <input type="url" id="systemURL" placeholder="例如: https://dash.cloudflare.com">
+                <div class="autocomplete-field">
+                    <input type="url" id="systemURL" placeholder="例如: https://dash.cloudflare.com" autocomplete="off">
+                    <i class="fas fa-chevron-down autocomplete-arrow"></i>
+                    <div class="autocomplete-dropdown" id="systemURLDropdown"></div>
+                </div>
 
                 <label for="registerAccount"><i class="fa fa-user"></i> 注册账号 (可选)</label>
-                <input type="text" id="registerAccount" placeholder="例如: admin@example.com">
+                <div class="autocomplete-field">
+                    <input type="text" id="registerAccount" placeholder="例如: admin@example.com" autocomplete="off">
+                    <i class="fas fa-chevron-down autocomplete-arrow"></i>
+                    <div class="autocomplete-dropdown" id="registerAccountDropdown"></div>
+                </div>
 
                 <label for="groups"><i class="fa fa-tags"></i> 分组 (可选)</label>
-                <input type="text" id="groups" placeholder="多个分组可用英文逗号分隔, 例如: 主要, 个人, 待续费">
+                <div class="groups-field">
+                    <div class="groups-tag-list" id="groupsTagList"></div>
+                    <div class="groups-input-wrap">
+                        <input type="text" id="groupsInput" placeholder="输入分组名称或选择已有分组" autocomplete="off">
+                        <i class="fas fa-chevron-down groups-arrow"></i>
+                        <div class="autocomplete-dropdown" id="groupsDropdown"></div>
+                    </div>
+                    <input type="hidden" id="groups" value="">
+                </div>
 
                 <button type="submit"><i class="fa fa-save"></i> 保存</button>
             </form>
+        </div>
+    </div>
+
+    <div id="renewOverlay" class="toast-overlay" style="display:none;">
+        <div class="toast-card">
+            <div class="toast-icon"><i class="fas fa-sync-alt" style="color:#186db3;"></i></div>
+            <div class="renew-line">
+                <span id="renewDomainName">example.com</span>
+                <span>&nbsp;续费时长</span>
+            </div>
+            <div class="renew-line">
+                <input type="number" id="renewDuration" min="1" value="1">
+                <select id="renewUnitSelect">
+                    <option value="year">年</option>
+                    <option value="month">月</option>
+                </select>
+            </div>
+            <div class="toast-actions">
+                <button class="toast-btn toast-btn-cancel" id="renewCancelBtn">取消</button>
+                <button class="toast-btn toast-btn-primary" id="renewConfirmBtn">确定</button>
+            </div>
         </div>
     </div>
 
