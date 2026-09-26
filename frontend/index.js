@@ -32,7 +32,7 @@ export function generateFooter(githubURL, blogURL, blogName) {
     `;
 }
 
-export function HTML_TEMPLATE (siteName, siteIcon, bgimgURL, githubURL, blogURL, blogName) {
+export function HTML_TEMPLATE (siteName, siteIcon, bgimgURL, githubURL, blogURL, blogName, isAdmin = true) {
     const bgimgStyle = generateBgStyle(bgimgURL);
     const footerHTML = generateFooter(githubURL, blogURL, blogName);
     
@@ -51,6 +51,11 @@ export function HTML_TEMPLATE (siteName, siteIcon, bgimgURL, githubURL, blogURL,
     </style>
 </head>
 <body>
+    <script>
+        // 注入前端运行模式：本部署仅使用管理模式，isAdmin 默认为 true
+        const IS_ADMIN = ${isAdmin};
+    </script>
+
     <div class="header">
         <h1 id="siteTitle"><i class="fas fa-clock"></i> ${siteName}</h1>
         <div class="action-buttons">

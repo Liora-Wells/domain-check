@@ -687,52 +687,51 @@ function renderDomainCards() {
     }
 
     // 绑定卡片交互事件
-        // 复制事件（点击域名复制）
-        listEl.querySelectorAll('.card-domain').forEach(el => {
-            el.addEventListener('click', (e) => {
-                navigator.clipboard.writeText(e.target.dataset.domain);
-                showAlert(\`已复制域名: \${e.target.dataset.domain}\`);
-            });
+    // 复制事件（点击域名复制）
+    listEl.querySelectorAll('.card-domain').forEach(el => {
+        el.addEventListener('click', (e) => {
+            navigator.clipboard.writeText(e.target.dataset.domain);
+            showAlert(\`已复制域名: \${e.target.dataset.domain}\`);
         });
-        
-        // 编辑事件
-        listEl.querySelectorAll('.edit-icon').forEach(el => {
-            el.addEventListener('click', (e) => {
-                const domain = e.target.dataset.domain;
-                const domainInfo = allDomains.find(d => d.domain === domain);
-                if (domainInfo) openDomainForm(domainInfo);
-            });
+    });
+
+    // 编辑事件
+    listEl.querySelectorAll('.edit-icon').forEach(el => {
+        el.addEventListener('click', (e) => {
+            const domain = e.target.dataset.domain;
+            const domainInfo = allDomains.find(d => d.domain === domain);
+            if (domainInfo) openDomainForm(domainInfo);
         });
-        
-        // 续期事件
-        listEl.querySelectorAll('.renew-icon').forEach(el => {
-            el.addEventListener('click', (e) => {
-                const domain = e.target.dataset.domain;
-                const domainInfo = allDomains.find(d => d.domain === domain);
-                if (domainInfo) openRenewModal(domainInfo);
-            });
+    });
+
+    // 续期事件
+    listEl.querySelectorAll('.renew-icon').forEach(el => {
+        el.addEventListener('click', (e) => {
+            const domain = e.target.dataset.domain;
+            const domainInfo = allDomains.find(d => d.domain === domain);
+            if (domainInfo) openRenewModal(domainInfo);
         });
-        
-        // 复制新建事件（用该卡片信息预填充表单）
-        listEl.querySelectorAll('.copy-icon').forEach(el => {
-            el.addEventListener('click', (e) => {
-                const domain = e.target.dataset.domain;
-                const domainInfo = allDomains.find(d => d.domain === domain);
-                if (domainInfo) openDomainFormWithCopy(domainInfo);
-            });
+    });
+
+    // 复制新建事件（用该卡片信息预填充表单）
+    listEl.querySelectorAll('.copy-icon').forEach(el => {
+        el.addEventListener('click', (e) => {
+            const domain = e.target.dataset.domain;
+            const domainInfo = allDomains.find(d => d.domain === domain);
+            if (domainInfo) openDomainFormWithCopy(domainInfo);
         });
-        
-        // 删除事件
-        listEl.querySelectorAll('.delete-icon').forEach(el => {
-            el.addEventListener('click', async (e) => {
-                const domain = e.target.dataset.domain;
-                if (await showConfirm(\`确定要删除域名 \${domain} 吗？\`)) {
-                    await deleteDomain(domain);
-                }
-            });
+    });
+
+    // 删除事件
+    listEl.querySelectorAll('.delete-icon').forEach(el => {
+        el.addEventListener('click', async (e) => {
+            const domain = e.target.dataset.domain;
+            if (await showConfirm(\`确定要删除域名 \${domain} 吗？\`)) {
+                await deleteDomain(domain);
+            }
         });
-    }
-    
+    });
+
     renderPagination();
 }
 
@@ -1288,7 +1287,8 @@ window.addEventListener('load', async () => {
     await fetchConfig();
     await fetchDomains();
 
-        // 绑定管理按钮事件
+    if (IS_ADMIN) {
+        // 管理模式：绑定管理按钮事件
         document.getElementById('addDomainBtn').addEventListener('click', () => openDomainForm());
         document.getElementById('exportDataBtn').addEventListener('click', exportData);
         document.getElementById('importDataBtn').addEventListener('click', importData);
@@ -1453,25 +1453,6 @@ window.addEventListener('load', async () => {
             });
         }
 
-        // 绑定注册日期和续费周期变动事件
-        const registrationDateEl = document.getElementById('registrationDate');
-        const renewalPeriodEl = document.getElementById('renewalPeriod');
-        const renewalUnitEl = document.getElementById('renewalUnit');
-        const domainEl = document.getElementById('domain');
-        const calculationElements = [registrationDateEl, renewalPeriodEl, renewalUnitEl];
-        calculationElements.forEach(el => {
-            if (el) {
-                el.addEventListener('change', calculateExpirationDate);
-                el.addEventListener('input', calculateExpirationDate);
-            }
-        });
-
-        // 监听域名输入，动态切换必填状态
-        if (domainEl) {
-            domainEl.addEventListener('input', (e) => {
-                updateFormRequiredStatus(e.target.value);
-            });
-        }
     } else {
         // 公开模式：登录按钮跳转 /admin
         document.getElementById('loginBtn').addEventListener('click', () => {
