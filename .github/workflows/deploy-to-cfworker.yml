@@ -18,6 +18,11 @@ jobs:
       TGID: ${{ secrets.TGID}}
       TGTOKEN: ${{ secrets.TGTOKEN}}
       CRON_TOKEN: ${{ secrets.CRON_TOKEN }}
+      LOGIN_MAX_ATTEMPTS: ${{ vars.LOGIN_MAX_ATTEMPTS }}
+      LOGIN_LOCK_SECONDS: ${{ vars.LOGIN_LOCK_SECONDS }}
+      WHOIS_RATE_LIMIT: ${{ vars.WHOIS_RATE_LIMIT }}
+      CRON_RATE_LIMIT: ${{ vars.CRON_RATE_LIMIT }}
+      RATE_LIMIT_WINDOW: ${{ vars.RATE_LIMIT_WINDOW }}
       CF_KV_ID: ${{ secrets.CF_KV_ID }}
       CF_CRONS: ${{ vars.CF_CRONS || '0 1,13 * * *' }}
 
@@ -82,6 +87,13 @@ jobs:
           else
             echo "::notice title=/cron 未启用令牌保护::未配置 CRON_TOKEN，/cron 手动触发接口保持免鉴权（与 API.md 一致）。如需保护，请添加同名 Secret。"
           fi
+
+          # —— 可选限流参数：不设置则使用代码内默认值 ——
+          for name in LOGIN_MAX_ATTEMPTS LOGIN_LOCK_SECONDS WHOIS_RATE_LIMIT CRON_RATE_LIMIT RATE_LIMIT_WINDOW; do
+            if [ -n "${!name}" ]; then
+              VARS+="$name"$'\n'
+            fi
+          done
 
           printf 'vars_list<<EOF\n%sEOF\n' "$VARS" >>"$GITHUB_OUTPUT"
 

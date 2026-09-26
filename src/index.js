@@ -8,6 +8,7 @@ import { onRequest as domainsApi } from './api/domains.js';
 import { onRequest as whoisApi } from './api/whois.js';
 import { checkDomainsScheduled } from './cron.js';
 import { authenticate, handleLogin } from './auth.js';
+import { getClientIp, hashIp, throttle, rateLimitedResponse } from './ratelimit.js';
 
 export default {
     async fetch(request, env, ctx) {
@@ -30,6 +31,12 @@ export default {
         }
 
         if (pathname.startsWith('/api/whois/')) {
+            // 该接口免鉴权，且每次都会向外请求 ip.sb / rdap.org，必须限流防止被刷爆配额
+            const ipHash = await hashIp(getClientIp(request));
+            const rl = await throttle(env, `rl:whois:${ipHash}`, config.whoisRateLimit, config.rateLimitWindowSeconds);
+            if (!rl.allowed) {
+                return rateLimitedResponse(rl.retryAfter, `WHOIS 查询过于频繁，请在 ${rl.retryAfter} 秒后再试。`);
+            }
             const context = { request, env, ctx, next: () => {} };
             const domain = pathname.replace('/api/whois/', '');
             return whoisApi(context, domain);
@@ -39,6 +46,13 @@ export default {
         if (pathname === '/cron') {
             if (request.method !== 'GET' && request.method !== 'POST') {
                 return new Response('Method Not Allowed', { status: 405 });
+            }
+
+            // 限流：该接口每次都会读 KV 并可能发送 TG 消息，先限流再校验令牌
+            const cronIpHash = await hashIp(getClientIp(request));
+            const cronRl = await throttle(env, `rl:cron:${cronIpHash}`, config.cronRateLimit, config.rateLimitWindowSeconds);
+            if (!cronRl.allowed) {
+                return rateLimitedResponse(cronRl.retryAfter, `/cron 调用过于频繁，请在 ${cronRl.retryAfter} 秒后再试。`);
             }
 
             // 可选保护：配置了 CRON_TOKEN 后，调用方必须携带 ?token=xxx 或 X-Cron-Token 头。

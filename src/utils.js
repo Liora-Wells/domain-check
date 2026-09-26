@@ -12,7 +12,13 @@ export function getConfig(env) {
         password: env.PASSWORD || "123123",
         days: Number(env.DAYS || 30), // 用于前端即将到期判断
         tgid: env.TGID || env.TG_CHAT_ID,
-        tgtoken: env.TGTOKEN || env.TG_BOT_TOKEN
+        tgtoken: env.TGTOKEN || env.TG_BOT_TOKEN,
+        // 限流与登录锁定（详见 README「防暴力破解与限流」）
+        loginMaxAttempts: Number(env.LOGIN_MAX_ATTEMPTS || 5),   // 失败几次后锁定该 IP
+        loginLockSeconds: Number(env.LOGIN_LOCK_SECONDS || 900), // 锁定时长（秒），默认 15 分钟
+        whoisRateLimit: Number(env.WHOIS_RATE_LIMIT || 20),      // 每窗口内 /api/whois 次数上限
+        cronRateLimit: Number(env.CRON_RATE_LIMIT || 10),        // 每窗口内 /cron 次数上限
+        rateLimitWindowSeconds: Number(env.RATE_LIMIT_WINDOW || 60)
     };
 }
 

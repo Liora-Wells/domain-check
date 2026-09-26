@@ -69,6 +69,52 @@
 | `BLOG_URL` | 博客链接 | `https://blog.notett.com` | ❌ |
 | `BLOG_NAME` | 博客名称 | `QingYun Blog` | ❌ |
 
+### 防暴力破解与限流
+
+项目内置两层防护，建议都开启。
+
+#### 第一层：Cloudflare WAF 速率限制（推荐，免费版可用）
+
+在请求到达 Worker 之前就在边缘拦掉，不消耗 Worker 配额。免费版可配 1 条规则，
+因此把几个关键入口合并进同一条。
+
+1. Cloudflare 控制台 → 选择你的域名 → **Security（安全性）→ WAF → Rate limiting rules**
+2. 点击 **Create rule**，按下表填写：
+
+| 字段 | 填写内容 |
+|------|----------|
+| Rule name | `登录与高开销接口限流` |
+| If incoming requests match | Custom filter expression |
+| 表达式 | `(http.request.uri.path eq "/login") or (starts_with(http.request.uri.path, "/api/whois/")) or (http.request.uri.path eq "/cron")` |
+| When rate exceeds | `10` requests per `1` minute |
+| Counting characteristics | `IP Address` |
+| Then take action | `Block`，Duration `10` minutes |
+
+> 如果被刷的只是首页，可以把表达式换成 `http.request.uri.path eq "/"`。
+
+#### 第二层：Worker 内置（默认已开启，无需配置）
+
+| 变量名 | 说明 | 默认值 |
+|--------|------|--------|
+| `LOGIN_MAX_ATTEMPTS` | 连续密码错误多少次后锁定该 IP | `5` |
+| `LOGIN_LOCK_SECONDS` | 锁定时长（秒） | `900`（15 分钟） |
+| `WHOIS_RATE_LIMIT` | 每个窗口内 `/api/whois/*` 允许次数 | `20` |
+| `CRON_RATE_LIMIT` | 每个窗口内 `/cron` 允许次数 | `10` |
+| `RATE_LIMIT_WINDOW` | 限流窗口长度（秒） | `60` |
+
+行为说明：
+
+- 密码连续错误达阈值后，该 IP 被锁定并返回 `429`（带 `Retry-After` 头）；
+  锁定期内即使密码正确也会被拒绝。
+- **携带错误 `auth` Cookie 访问同样计入失败**（阈值放宽 3 倍，默认 15 次）。
+  否则攻击者可以用 `Cookie: auth=<猜测值>` 完全绕开登录锁定。
+- 匿名访问（不带 Cookie）不计入失败，正常访客不会被误锁。
+- 登录成功后自动清空该 IP 的失败记录。
+
+> ⚠️ **能力边界**：这一层基于 Workers KV，KV 是最终一致的，且同一个 key 每秒只允许
+> 1 次写入。它能挡住常规的密码爆破与低频滥用，但**挡不住高速洪水攻击**——
+> 那种情况请依赖上面的 WAF 规则。
+
 ## 本项目 API 接口
 
 https://github.com/yutian81/domain-check/blob/main/API.md

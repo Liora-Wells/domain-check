@@ -1,6 +1,10 @@
 // src/_middleware.js
 
 import { getConfig } from './utils.js';
+import {
+    getClientIp, hashIp, safeEqual,
+    getLoginLockSeconds, recordLoginFailure, clearLoginFailures, rateLimitedResponse,
+} from './ratelimit.js';
 
 // 认证逻辑
 export async function authenticate(request, env) {
@@ -11,8 +15,21 @@ export async function authenticate(request, env) {
         const match = cookie.match(/auth=([^;]+)/);
         if (match) authToken = match[1];
     }
-    const isAuthenticated = authToken === config.password;
-    if (isAuthenticated) return null; 
+    if (safeEqual(authToken, config.password)) return null;
+
+    // Cookie 也是一条猜密码的通道：Cookie: auth=<猜测值> 能通过 200/302 区分对错，
+    // 若不在此计数，攻击者就能完全绕开 /login 的失败锁定。
+    // 这里用更宽松的阈值（默认 15 次），避免带过期 Cookie 的正常用户被误锁。
+    const ipHash = await hashIp(getClientIp(request));
+
+    const lockedFor = await getLoginLockSeconds(env, ipHash);
+    if (lockedFor > 0) {
+        return rateLimitedResponse(lockedFor, `尝试次数过多，请在 ${Math.ceil(lockedFor / 60)} 分钟后再试。`);
+    }
+
+    if (authToken) {
+        await recordLoginFailure(env, ipHash, config.loginMaxAttempts * 3, config.loginLockSeconds);
+    }
 
     return Response.redirect(new URL('/login', request.url), 302);
 }
@@ -20,16 +37,34 @@ export async function authenticate(request, env) {
 // 登录处理逻辑 — redirectTo 兼容上游 /admin，默认 / 保持现有行为
 export async function handleLogin(request, env, redirectTo = '/') {
     const config = getConfig(env);
+    const ipHash = await hashIp(getClientIp(request));
+
+    // 该 IP 处于锁定期：连登录页都不再返回，直接 429
+    const lockedFor = await getLoginLockSeconds(env, ipHash);
+    if (lockedFor > 0) {
+        const html = generateLoginPage(true, config.siteName, config.siteIcon, config.bgimgURL,
+            config.githubURL, config.blogURL, config.blogName,
+            `尝试次数过多，该 IP 已被锁定，请在 ${Math.ceil(lockedFor / 60)} 分钟后再试。`);
+        return new Response(html, {
+            status: 429,
+            headers: {
+                'Content-Type': 'text/html; charset=UTF-8',
+                'Retry-After': String(lockedFor),
+                'Cache-Control': 'no-store',
+            },
+        });
+    }
+
     if (request.method === 'GET') {
         const html = generateLoginPage(false, config.siteName, config.siteIcon, config.bgimgURL, config.githubURL, config.blogURL, config.blogName);
         return new Response(html, { headers: { 'Content-Type': 'text/html' } });
     } else if (request.method === 'POST') {
         let password;
-        const contentType = request.headers.get('content-type') || '';
         try {
             const formData = await request.formData();
             password = formData.get('password');
-            if (password === config.password) {
+            if (safeEqual(password, config.password)) {
+                await clearLoginFailures(env, ipHash); // 登录成功即清空该 IP 的失败记录
                 const expires = new Date();
                 expires.setDate(expires.getDate() + 7);
                 const headers = new Headers();
@@ -37,8 +72,13 @@ export async function handleLogin(request, env, redirectTo = '/') {
                 headers.set('Set-Cookie', `auth=${password}; Expires=${expires.toUTCString()}; HttpOnly; Path=/; Secure; SameSite=Lax`);
                 return new Response(null, { status: 302, headers: headers });
             } else {
-                const html = generateLoginPage(true, config.siteName, config.siteIcon, config.bgimgURL, config.githubURL, config.blogURL, config.blogName);
-                return new Response(html, { headers: { 'Content-Type': 'text/html' } });
+                const r = await recordLoginFailure(env, ipHash, config.loginMaxAttempts, config.loginLockSeconds);
+                const message = r.lockUntil
+                    ? `密码错误次数过多，该 IP 已被锁定，请在 ${Math.ceil(config.loginLockSeconds / 60)} 分钟后再试。`
+                    : `密码错误，请重试（还可尝试 ${r.remaining} 次）`;
+                const html = generateLoginPage(true, config.siteName, config.siteIcon, config.bgimgURL,
+                    config.githubURL, config.blogURL, config.blogName, message);
+                return new Response(html, { headers: { 'Content-Type': 'text/html; charset=UTF-8' } });
             }
         } catch (error) {
             return new Response('Bad Request', { status: 400 });
@@ -48,7 +88,7 @@ export async function handleLogin(request, env, redirectTo = '/') {
 }
 
 // 生成登录页面HTML
-export function generateLoginPage(showError = false, siteName, siteIcon, bgimgURL, githubURL, blogURL, blogName) {
+export function generateLoginPage(showError = false, siteName, siteIcon, bgimgURL, githubURL, blogURL, blogName, errorMessage = '密码错误，请重试') {
   const currentYear = new Date().getFullYear();
     return `
     <!DOCTYPE html>
@@ -192,7 +232,7 @@ export function generateLoginPage(showError = false, siteName, siteIcon, bgimgUR
             <input type="password" id="password" name="password" required autocomplete="current-password">
           </div>
           <button type="submit">登录系统</button>
-          <div id="errorMessage" class="error">密码错误，请重试</div>
+          <div id="errorMessage" class="error">${errorMessage}</div>
         </form>
         <div class="footer">
           <p>
