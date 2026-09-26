@@ -30,13 +30,24 @@ curl -X GET https://your-domain-check.workers.dev/api/config
 
 ## GET 或 POST /cron —— 手动检查域名到期情况
 
-- 请求示例（无需鉴权）
+- 请求示例（默认无需鉴权）
 
 ```
 curl -X GET https://your-domain-check.workers.dev/cron
 # 或
 curl -X POST https://your-domain-check.workers.dev/cron
 ```
+
+> 🔐 **可选令牌保护**：若配置了环境变量 `CRON_TOKEN`，则调用时必须携带令牌，否则返回 `401`。
+>
+> ```bash
+> curl -X GET "https://your-domain-check.workers.dev/cron?token=<CRON_TOKEN>"
+> # 或使用请求头
+> curl -X GET https://your-domain-check.workers.dev/cron -H "X-Cron-Token: <CRON_TOKEN>"
+> ```
+>
+> 未配置 `CRON_TOKEN` 时保持免鉴权行为（即上面的默认用法）。
+> 定时任务（Cloudflare Cron Triggers）不经过 HTTP，不受此项影响。
 
 - 返回示例
 

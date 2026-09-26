@@ -17,6 +17,7 @@ jobs:
       PASSWORD: ${{ secrets.PASSWORD }}
       TGID: ${{ secrets.TGID}}
       TGTOKEN: ${{ secrets.TGTOKEN}}
+      CRON_TOKEN: ${{ secrets.CRON_TOKEN }}
       CF_KV_ID: ${{ secrets.CF_KV_ID }}
       CF_CRONS: ${{ vars.CF_CRONS || '0 1,13 * * *' }}
 
@@ -35,7 +36,7 @@ jobs:
       - name: 🔄 替换 wrangler.toml 中的变量
         id: config_setup
         run: |
-          [ -n "${CF_KV_ID}" ] || { echo "🔴 错误: 必须设置 'CF_KV_ID' 变量"; exit 1; }  
+          [ -n "${CF_KV_ID}" ] || { echo "🔴 错误: 必须设置 'CF_KV_ID' 变量"; exit 1; }
           sed -i "s#{CF_KV_ID}#${CF_KV_ID}#g" wrangler.toml
           sed -i "s#{CF_CRONS}#${CF_CRONS}#g" wrangler.toml
 
@@ -52,17 +53,43 @@ jobs:
         id: dynamic_vars
         run: |
           VARS=""
-          [ -n "$PASSWORD" ] && VARS+="PASSWORD"$'\n' || echo "⚠️ 警告: PASSWORD 变量未设置，默认为 123123"
-          [ -n "$TGID" ] && [ -n "$TGTOKEN" ] && VARS+="TGID"$'\n'"TGTOKEN"$'\n' || echo "⚠️ 警告: TG 变量未设置，无法执行 TG 通知"
+
+          # —— PASSWORD：未设置时行为不变（仍用默认 123123），但必须显著告警 ——
+          if [ -n "$PASSWORD" ]; then
+            VARS+="PASSWORD"$'\n'
+          else
+            echo "::warning title=未设置 PASSWORD::GitHub Secret 中未配置 PASSWORD，本次部署将使用公开的默认密码 123123 保护站点，任何人都可以用它登录管理面板。"
+            {
+              echo "## ⚠️ 安全提醒：未设置 \`PASSWORD\`"
+              echo ""
+              echo "本次部署使用的是**公开的默认密码 \`123123\`**，任何人都可以用它登录你的管理面板，并增删改你的域名数据。"
+              echo ""
+              echo "**修复方式**：仓库 \`Settings → Secrets and variables → Actions\` → \`New repository secret\`，名称填 \`PASSWORD\`，值填你自己的密码，然后重新运行本 workflow。"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # —— Telegram 通知变量 ——
+          if [ -n "$TGID" ] && [ -n "$TGTOKEN" ]; then
+            VARS+="TGID"$'\n'"TGTOKEN"$'\n'
+          else
+            echo "::warning title=未设置 TG 通知变量::TGID / TGTOKEN 未配置，域名到期提醒将不会推送到 Telegram。"
+          fi
+
+          # —— /cron 可选令牌保护 ——
+          if [ -n "$CRON_TOKEN" ]; then
+            VARS+="CRON_TOKEN"$'\n'
+            echo "::notice title=/cron 已启用令牌保护::调用 /cron 需携带 ?token=xxx 或 X-Cron-Token 头。"
+          else
+            echo "::notice title=/cron 未启用令牌保护::未配置 CRON_TOKEN，/cron 手动触发接口保持免鉴权（与 API.md 一致）。如需保护，请添加同名 Secret。"
+          fi
+
           printf 'vars_list<<EOF\n%sEOF\n' "$VARS" >>"$GITHUB_OUTPUT"
 
           if [ -n "$VARS" ]; then
-            printf 'vars_list<<EOF\n%sEOF\n' "$VARS" >>"$GITHUB_OUTPUT"
             echo -e "\n✅ 传递给 Wrangler 的环境变量名:"
             printf '%s' "$VARS"
           else
             echo -e "\n⚠️ 没有需要传递的变量名"
-            printf 'vars_list=\n' >>"$GITHUB_OUTPUT"
           fi
 
       - name: 🚀 部署到 CF Worker

@@ -166,6 +166,19 @@ async function handleDeleteDomain(request, env) {
     }
 }
 
+// 在给定日期上增加 duration 个 unit（year / month）。
+// 目标月份天数不足时取该月最后一天，避免 "1/31 + 1月" 溢出成 "3/3" 这类错误。
+export function addPeriod(date, duration, unit) {
+    const months = unit === 'year' ? duration * 12 : duration;
+    const day = date.getDate();
+    const result = new Date(date);
+    result.setDate(1); // 先归到 1 号，防止 setMonth 在月末溢出
+    result.setMonth(result.getMonth() + months);
+    const lastDay = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
+    result.setDate(Math.min(day, lastDay));
+    return result;
+}
+
 // 续费域名处理: PATCH /api/domains — 适配 DOMAIN_LIST，永久域名禁止续费
 async function handlePatchDomain(request, env) {
     let data;
@@ -200,9 +213,7 @@ async function handlePatchDomain(request, env) {
         if (isNaN(currentExpDate.getTime())) {
             return new Response(JSON.stringify({ error: '域名到期日期格式无效' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
         }
-        const newExpDate = new Date(currentExpDate);
-        if (unit === 'year') newExpDate.setFullYear(currentExpDate.getFullYear() + duration);
-        else newExpDate.setMonth(currentExpDate.getMonth() + duration);
+        const newExpDate = addPeriod(currentExpDate, duration, unit);
         const newExpirationDate = `${newExpDate.getFullYear()}-${String(newExpDate.getMonth() + 1).padStart(2, '0')}-${String(newExpDate.getDate()).padStart(2, '0')}`;
         existing.expirationDate = newExpirationDate;
         existing.renewalPeriod = duration;

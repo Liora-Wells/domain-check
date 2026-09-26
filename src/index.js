@@ -40,6 +40,18 @@ export default {
             if (request.method !== 'GET' && request.method !== 'POST') {
                 return new Response('Method Not Allowed', { status: 405 });
             }
+
+            // 可选保护：配置了 CRON_TOKEN 后，调用方必须携带 ?token=xxx 或 X-Cron-Token 头。
+            // 未配置 CRON_TOKEN 时保持原有的免鉴权行为，不破坏既有用法。
+            if (env.CRON_TOKEN) {
+                const providedToken = url.searchParams.get('token') || request.headers.get('X-Cron-Token') || '';
+                if (providedToken !== env.CRON_TOKEN) {
+                    return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+                        status: 401,
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                }
+            }
             
             try {
                 const expiringDomains = await checkDomainsScheduled(env); 

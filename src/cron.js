@@ -37,13 +37,15 @@ export async function checkDomainsScheduled(env) {
         const timeDiff = expirationUTC - todayUTC;
         const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
         
-        // 只对即将到期 (1 < 剩余天数 <= maxDaysForAlert) 的域名发送通知
-        if (daysRemaining > 0 && daysRemaining <= maxDaysForAlert) {
+        // 对即将到期 (0 <= 剩余天数 <= maxDaysForAlert) 的域名发送通知
+        // 含 0：到期当天也会提醒，避免当天不再推送而错过
+        if (daysRemaining >= 0 && daysRemaining <= maxDaysForAlert) {
+            const remainText = daysRemaining === 0 ? '今天到期！' : `将在 <b>${daysRemaining}天</b> 后过期！`;
             const message = `
 <b>🚨 域名到期提醒 🚨</b>
 ====================
 🌐 域名: <code>${domainInfo.domain}</code>
-♻️ 将在 <b>${daysRemaining}天</b> 后过期！
+♻️ ${remainText}
 📅 过期日期: ${domainInfo.expirationDate}
 🔗 注册商: <a href="${domainInfo.systemURL}">${domainInfo.system}</a>
 👤 注册账号: <code>${domainInfo.registerAccount || 'N/A'}</code>
